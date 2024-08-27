@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator</title>
+    <!-- Link to Bricolage Grotesque and Exo 2 fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.5.1/math.min.js"></script> <!-- Math.js CDN -->
+    <style>
+        html {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000; /* Set background color to black */
+            color: #fff; /* Set text color to white for better contrast */
+        }
+        .container {
+            background-color: #333; /* Set container background color to dark gray */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px; /* Maximum width to keep it responsive */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-family: 'Exo 2', Arial, sans-serif; /* Title font */
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-family: 'Bricolage Grotesque', Arial, sans-serif; /* Font for labels */
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #fff; /* Border color set to white */
+            border-radius: 4px;
+            font-family: 'Exo 2', Arial, sans-serif; /* Font for input text and select boxes */
+            color: #fff; /* Input text color */
+            background-color: #000; /* Input background color */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #DC143C; /* Button background color */
+            color: #fff; /* Button text color */
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Bricolage Grotesque', Arial, sans-serif; /* Font for button */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        button:hover {
+            background-color: #c8102e; /* Darker shade of Crimson for hover effect */
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            text-align: center;
+            font-family: 'Bricolage Grotesque', Arial, sans-serif; /* Font for result text */
+        }
+        .indicator {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            font-family: 'Bricolage Grotesque', Arial, sans-serif; /* Font for indicator */
+        }
+        .underweight {
+            background-color: #1e90ff;
+        }
+        .normal {
+            background-color: #32cd32;
+        }
+        .overweight {
+            background-color: #ffa500;
+        }
+        .obese {
+            background-color: #ff4500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BMI Calculator</h1>
+        
+        <label for="weight">Weight (kg):</label>
+        <input type="text" id="weight" placeholder="Enter your weight">
+        
+        <label for="height-unit">Height Unit:</label>
+        <select id="height-unit" onchange="toggleHeightUnits()">
+            <option value="cm">Centimeters</option>
+            <option value="ft_in">Feet & Inches</option>
+        </select>
+        
+        <div id="height-fields">
+            <label for="height">Height:</label>
+            <input type="text" id="height" placeholder="Enter height">
+            <input type="text" id="height-inch" placeholder="Inches" style="display:none;">
+        </div>
+        
+        <label for="gender">Gender:</label>
+        <select id="gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+        
+        <label for="age">Age:</label>
+        <input type="text" id="age" placeholder="Enter your age">
+        
+        <button onclick="calculateBMI()">Calculate BMI</button>
+        
+        <div id="result" class="result"></div>
+        <div id="indicator" class="indicator" style="display:none;"></div>
+    </div>
+
+    <script>
+        function toggleHeightUnits() {
+            const heightUnit = document.getElementById('height-unit').value;
+            const heightField = document.getElementById('height');
+            const heightInchField = document.getElementById('height-inch');
+
+            if (heightUnit === 'ft_in') {
+                heightField.placeholder = 'Feet';
+                heightInchField.style.display = 'inline';
+            } else {
+                heightField.placeholder = 'Centimeters';
+                heightInchField.style.display = 'none';
+            }
+        }
+
+        function getBMIRanges(gender, age) {
+            const ageNumber = parseInt(age, 10);
+
+            if (isNaN(ageNumber) || ageNumber < 0) {
+                return {};
+            }
+
+            if (ageNumber < 18) {
+                return {
+                    underweight: 17.0,
+                    normal: 23.0,
+                    overweight: 27.0
+                };
+            } else {
+                return gender === 'male' ? {
+                    underweight: 18.5,
+                    normal: 24.9,
+                    overweight: 29.9
+                } : {
+                    underweight: 19.0,
+                    normal: 25.9,
+                    overweight: 30.9
+                };
+            }
+        }
+
+        function calculateBMI() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const heightUnit = document.getElementById('height-unit').value;
+            const gender = document.getElementById('gender').value;
+            const age = document.getElementById('age').value;
+
+            let heightInMeters;
+
+            if (heightUnit === 'cm') {
+                const heightCm = parseFloat(document.getElementById('height').value);
+                if (isNaN(heightCm) || heightCm <= 0) {
+                    document.getElementById('result').innerText = 'Please enter a valid positive number for height.';
+                    return;
+                }
+                heightInMeters = heightCm / 100;
+            } else {
+                const heightFeet = parseFloat(document.getElementById('height').value);
+                const heightInches = parseFloat(document.getElementById('height-inch').value) || 0;
+
+                if (isNaN(heightFeet) || heightFeet < 0 || isNaN(heightInches) || heightInches < 0) {
+                    document.getElementById('result').innerText = 'Please enter valid positive numbers for height.';
+                    return;
+                }
+                
+                heightInMeters = (heightFeet * 0.3048) + (heightInches * 0.0254);
+            }
+
+            if (isNaN(weight) || weight <= 0) {
+                document.getElementById('result').innerText = 'Please enter a valid positive number for weight.';
+                return;
+            }
+
+            // Calculate BMI using Math.js
+            const bmi = math.divide(weight, math.pow(heightInMeters, 2));
+            const bmiRounded = math.round(bmi, 2);
+
+            // Determine BMI ranges based on gender and age
+            const ranges = getBMIRanges(gender, age);
+
+            // Generate result text and indicator
+            let resultText = 'Your BMI is ' + bmiRounded + '. ';
+            let indicatorText = '';
+            let indicatorClass = '';
+
+            if (bmi < ranges.underweight) {
+                resultText += 'You are underweight.';
+                indicatorText = 'Underweight';
+                indicatorClass = 'underweight';
+            } else if (bmi <= ranges.normal) {
+                resultText += 'You have a normal weight.';
+                indicatorText = 'Normal Weight';
+                indicatorClass = 'normal';
+            } else if (bmi <= ranges.overweight) {
+                resultText += 'You are overweight.';
+                indicatorText = 'Overweight';
+                indicatorClass = 'overweight';
+            } else {
+                resultText += 'You are obese.';
+                indicatorText = 'Obese';
+                indicatorClass = 'obese';
+            }
+
+            // Include gender information
+            resultText += ' (' + (gender === 'male' ? 'Male' : 'Female') + ')';
+
+            document.getElementById('result').innerText = resultText;
+            const indicator = document.getElementById('indicator');
+            indicator.innerText = indicatorText;
+            indicator.className = 'indicator ' + indicatorClass;
+            indicator.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
